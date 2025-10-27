@@ -43,7 +43,11 @@ cd server
 npm install
 cp .env.example .env
 ```
-#### sửa .env: dùng Mongo local `MONGODB_URI=mongodb://localhost:27017/`smart_access`
+#### sửa .env: dùng Mongo local 
+```bash
+MONGODB_URI=mongodb://localhost:27017/smart_access
+```
+- Chạy server:
 ```bash
 npm run dev   # hoặc: node server.js
 ```
