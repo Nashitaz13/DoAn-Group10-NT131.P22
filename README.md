@@ -6,7 +6,9 @@ cd DoAn-Group10-NT131.P22
 ```
 
 ### Check branch
+```bash
 git branch -a
+```
 ### Chuyển sang nhánh Server
 ```bash
 git checkout Server
