@@ -3,6 +3,7 @@ const express = require('express');
 const http = require('http');
 const session = require('express-session');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
@@ -25,9 +26,16 @@ app.use(session({
 }));
 
 // 2) Thư mục FE tĩnh (PUBLIC_DIR)
-// In container, server.js is at /app/server.js and public is at /app/public
-// Use path.join(__dirname, 'public') so it resolves to /app/public
-const PUBLIC_DIR = path.join(__dirname, 'public');
+// Tự động phát hiện thư mục public cho cả môi trường Docker và local dev
+const candidatePublicDirs = [
+  path.join(__dirname, 'public'),      // Docker image: /app/public
+  path.join(__dirname, '..', 'public'),// Local dev: repo/public
+  path.resolve(process.cwd(), 'public') // Fallback theo CWD
+];
+const PUBLIC_DIR = candidatePublicDirs.find(p => fs.existsSync(path.join(p, 'login.html'))) ||
+                   candidatePublicDirs.find(p => fs.existsSync(p)) ||
+                   path.join(__dirname, '..', 'public');
+
 app.locals.PUBLIC_DIR = PUBLIC_DIR;        // để routes dùng
 app.use(express.static(PUBLIC_DIR));       // ⚠️ ĐẶT TRƯỚC routes
 
