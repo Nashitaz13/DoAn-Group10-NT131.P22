@@ -1,7 +1,9 @@
 # Smart Access (FE static + BE Express + MongoDB)
 ## Lấy mã nguồn
+```bash
 git clone https://github.com/Nashitaz13/DoAn-Group10-NT131.P22.git
 cd DoAn-Group10-NT131.P22
+```
 
 ### Check branch
 git branch -a
@@ -87,9 +89,10 @@ EMAIL_PASS=YOUR_APP_PASSWORD
 ```
 ## Lệnh nhanh kiểm thử
 ### REST
+```bash
 curl -s http://localhost:4000/api/logs/recent | head
 curl -s http://localhost:4000/api/access-logs | head
-
+```
 ### Log server (Compose)
 ```bash
 docker compose logs -f server
