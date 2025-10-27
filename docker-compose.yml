@@ -1,0 +1,37 @@
+# docker-compose.yml
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongo_data:/data/db
+    # Mở cổng nếu bạn cần truy cập Mongo từ host (tùy chọn):
+    # ports:
+    #   - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "mongodb://root:password@localhost:27017/admin", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  server:
+    build:
+      context: .                    # dùng gốc repo làm build context
+      dockerfile: server/Dockerfile # chỉ định Dockerfile của BE
+      args:
+        PUBLIC_DIR: public          # copy FE tĩnh từ ./public vào image
+    env_file: .env                  # đọc các biến ENV (PORT, MONGODB_URI, SMTP, ...)
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "4000:4000"                 # app chạy tại http://localhost:4000
+    restart: unless-stopped
+
+volumes:
+  mongo_data:

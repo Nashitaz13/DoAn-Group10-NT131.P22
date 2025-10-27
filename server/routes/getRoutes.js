@@ -1,54 +1,64 @@
+// server/routes/getRoutes.js (hoặc tên file bạn đang dùng)
 const express = require('express');
 const path = require('path');
 const router = express.Router();
 
-// Lay log tu AccessLog model
+// Models
 const AccessLog = require('../src/models/AccessLog');
 
-const CLIENTS_DIR = path.join(__dirname, '..', '..', 'clients');
-const PUBLIC_PATHS = [
+// Các đường dẫn public (không cần đăng nhập)
+const PUBLIC_PATHS = new Set([
   '/login', '/login.html',
   '/register', '/register.html',
   '/forgot-password', '/forgot-password.html',
   '/verify-otp', '/verify-otp.html',
   '/reset-password', '/reset-password.html'
-];
+]);
+
+// Tiện ích gửi file HTML từ thư mục public
+const DEFAULT_PUBLIC_DIR = path.join(__dirname, '..', 'public');
+function sendPublic(req, res, filename) {
+  const rootDir = (req.app && req.app.locals && req.app.locals.PUBLIC_DIR) || DEFAULT_PUBLIC_DIR;
+  return res.sendFile(filename, { root: rootDir });
+}
 
 // Middleware bảo vệ route GET
 router.use((req, res, next) => {
   const ext = path.extname(req.path).toLowerCase();
-  if (
-    PUBLIC_PATHS.includes(req.path) ||
-    req.session.user ||
-    ['.css', '.js', '.png', '.jpg', '.jpeg', '.svg', '.ico', '.woff2', '.woff', '.ttf', '.map'].includes(ext)
-  ) return next();
+  const isAsset = ['.css', '.js', '.png', '.jpg', '.jpeg', '.svg', '.ico', '.woff2', '.woff', '.ttf', '.map']
+    .includes(ext);
+
+  if (isAsset || PUBLIC_PATHS.has(req.path) || req.session.user) {
+    return next();
+  }
   return res.redirect('/login');
 });
 
-// Trang chính sau đăng nhập
+// ===== Pages =====
 router.get('/', (req, res) => {
   if (!req.session.user) return res.redirect('/login');
-  res.sendFile(path.join(CLIENTS_DIR, 'index.html'));
+  return sendPublic(req, res, 'index.html');
 });
 
 router.get('/history', (req, res) => {
   if (!req.session.user) return res.redirect('/login');
-  res.sendFile(path.join(CLIENTS_DIR, 'history.html'));
+  return sendPublic(req, res, 'history.html');
 });
 
 router.get('/tb_tn', (req, res) => {
   if (!req.session.user) return res.redirect('/login');
-  res.sendFile(path.join(CLIENTS_DIR, 'tb_tn.html'));
+  return sendPublic(req, res, 'tb_tn.html');
 });
 
-router.get('/login', (req, res) => res.sendFile(path.join(CLIENTS_DIR, 'login.html')));
-router.get('/register', (req, res) => res.sendFile(path.join(CLIENTS_DIR, 'register.html')));
-router.get('/forgot-password', (req, res) => res.sendFile(path.join(CLIENTS_DIR, 'forgot-password.html')));
-router.get('/verify-otp', (req, res) => res.sendFile(path.join(CLIENTS_DIR, 'verify-otp.html')));
-router.get('/reset-password', (req, res) => res.sendFile(path.join(CLIENTS_DIR, 'reset-password.html')));
+// Auth pages (public)
+router.get('/login',        (req, res) => sendPublic(req, res, 'login.html'));
+router.get('/register',     (req, res) => sendPublic(req, res, 'register.html'));
+router.get('/forgot-password', (req, res) => sendPublic(req, res, 'forgot-password.html'));
+router.get('/verify-otp',   (req, res) => sendPublic(req, res, 'verify-otp.html'));
+router.get('/reset-password',(req, res) => sendPublic(req, res, 'reset-password.html'));
 
-// Lấy tất cả lịch sử truy cập (history.html)
-router.get('/api/access-logs', async (req, res) => {
+// ===== APIs =====
+router.get('/api/access-logs', async (_req, res) => {
   try {
     const logs = await AccessLog.find().sort({ time: -1 });
     res.json(logs);
@@ -57,9 +67,8 @@ router.get('/api/access-logs', async (req, res) => {
   }
 });
 
-  router.get('/api/logs/recent', async (req, res) => {
+router.get('/api/logs/recent', async (_req, res) => {
   try {
-    // Lấy hết trong 2 ngày gần nhất, hoặc bạn lấy 30 bản ghi mới nhất
     const logs = await AccessLog.find({})
       .sort({ time: -1 })
       .limit(20);
